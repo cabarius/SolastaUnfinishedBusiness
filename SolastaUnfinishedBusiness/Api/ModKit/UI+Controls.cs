@@ -240,14 +240,18 @@ internal static partial class UI
 
     // Action Buttons
 
-    public static void ActionButton(string title, Action action, params GUILayoutOption[] options)
+    public static bool ActionButton(string title, Action action, params GUILayoutOption[] options)
     {
-        if (GL.Button(title, options.AddDefaults())) { action?.Invoke(); }
+        bool changed = false;
+        if (GL.Button(title, options.AddDefaults())) { action?.Invoke(); changed = true; }
+        return changed;
     }
 
-    public static void ActionButton(string title, Action action, GUIStyle style, params GUILayoutOption[] options)
+    public static bool ActionButton(string title, Action action, GUIStyle style, params GUILayoutOption[] options)
     {
-        if (GL.Button(title, style, options.AddDefaults())) { action?.Invoke(); }
+        bool changed = false;
+        if (GL.Button(title, style, options.AddDefaults())) { action?.Invoke(); changed = true; }
+        return changed;
     }
 
     public static void DangerousActionButton(string title, string warning, ref bool areYouSureState, Action action)

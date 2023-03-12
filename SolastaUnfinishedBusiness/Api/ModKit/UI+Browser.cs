@@ -17,7 +17,7 @@ internal static partial class UI
         private static int matchCount;
         private static bool showAll;
 
-        internal static void OnGUI(string callerKey,
+        internal static void OnGUI(string callerKey, ref bool changed,
             T target,
             IEnumerable<TItem> current,
             IEnumerable<TDef> available,
@@ -98,12 +98,13 @@ internal static partial class UI
                 }
 
                 currentDict.TryGetValue(def, out var item);
-                OnRowGUI(target, def, item, title, description, value, setValue, incrementValue, decrementValue,
+                OnRowGUI(ref changed, target, def, item, title, description, value, setValue, incrementValue, decrementValue,
                     addItem, removeItem);
             }
         }
 
         internal static void OnRowGUI(
+            ref bool changed,
             T target,
             TDef definition,
             TItem item,
@@ -117,13 +118,13 @@ internal static partial class UI
             Func<T, TItem, Action> removeItem = null
         )
         {
-            var remWidth = UmmWidth;
+            var remWidth = UMMWidth;
             matchCount++;
             using (HorizontalScope())
             {
                 Space(100);
                 remWidth -= 100;
-                var titleWidth = ((int)(UmmWidth / (IsWide ? 3.0f : 4.0f))).Point();
+                var titleWidth = ((int)(UMMWidth / (IsWide ? 3.0f : 4.0f))).Point();
                 var text = title(definition);
                 if (item != null)
                 {
@@ -138,7 +139,7 @@ internal static partial class UI
                 {
                     if (decrementValue?.Invoke(target, item) is { } decrementAction)
                     {
-                        ActionButton("<", decrementAction, 60.Width());
+                        if (ActionButton("<", () => decrementAction(), 60.Width())) changed = true;
                     }
                     else
                     {
@@ -149,7 +150,7 @@ internal static partial class UI
                     Label($"{stringValue}".Orange().Bold(), Width(100));
                     if (incrementValue?.Invoke(target, item) is { } incrementer)
                     {
-                        ActionButton(">", incrementer, 60.Width());
+                        if (ActionButton(">", incrementer, 60.Width())) changed = true;
                     }
                     else
                     {
@@ -160,14 +161,14 @@ internal static partial class UI
                 30.Space();
                 if (addItem?.Invoke(target, definition) is { } add)
                 {
-                    ActionButton("Add".Localized(), add, 150.Width());
+                    if (ActionButton("Add".Localized(), add, 150.Width())) changed = true;
                 }
 
                 Space(10);
                 remWidth -= 10;
                 if (item != null && removeItem?.Invoke(target, item) is { } remove)
                 {
-                    ActionButton("Remove".Localized(), remove, 175.Width());
+                    if (ActionButton("Remove".Localized(), remove, 175.Width())) changed = true;
                 }
 
                 remWidth -= 178;
