@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Mono.CSharp;
 using SolastaUnfinishedBusiness.Api.LanguageExtensions;
 using SolastaUnfinishedBusiness.Api.ModKit.Utility;
 
@@ -11,13 +12,15 @@ internal static partial class UI
     internal static class Browser<T, TItem, TDef> // for many things the item will be the definition
     {
         private static IEnumerable<TDef> _filteredDefinitions;
+        private static Dictionary<string, bool> disclosureStates = new Dictionary<string, bool>();
         private static string prevCallerKey = "";
         private static string searchText = "";
         private static int searchLimit = 100;
         private static int matchCount;
         private static bool showAll;
 
-        internal static void OnGUI(string callerKey, ref bool changed,
+        internal static void OnGUI(
+            string callerKey, ref bool changed,
             T target,
             IEnumerable<TItem> current,
             IEnumerable<TDef> available,
@@ -31,7 +34,8 @@ internal static partial class UI
             Func<T, TItem, Action> incrementValue = null,
             Func<T, TItem, Action> decrementValue = null,
             Func<T, TDef, Action> addItem = null,
-            Func<T, TItem, Action> removeItem = null
+            Func<T, TItem, Action> removeItem = null,
+            Func<T, TItem, Action> childrenOnGUI = null
         )
         {
             var searchChanged = false;
@@ -40,6 +44,7 @@ internal static partial class UI
             {
                 searchChanged = true;
                 showAll = false;
+                disclosureStates.Clear();
             }
 
             prevCallerKey = callerKey;
@@ -98,13 +103,13 @@ internal static partial class UI
                 }
 
                 currentDict.TryGetValue(def, out var item);
-                OnRowGUI(ref changed, target, def, item, title, description, value, setValue, incrementValue, decrementValue,
+                OnRowGUI(callerKey, ref changed, target, def, item, title, description, value, setValue, incrementValue, decrementValue,
                     addItem, removeItem);
             }
         }
 
         internal static void OnRowGUI(
-            ref bool changed,
+            string callerKey, ref bool changed,
             T target,
             TDef definition,
             TItem item,
@@ -115,7 +120,8 @@ internal static partial class UI
             Func<T, TItem, Action> incrementValue = null,
             Func<T, TItem, Action> decrementValue = null,
             Func<T, TDef, Action> addItem = null,
-            Func<T, TItem, Action> removeItem = null
+            Func<T, TItem, Action> removeItem = null,
+            Func<T, TItem, Action> childrenOnGUI = null
         )
         {
             var remWidth = UMMWidth;
@@ -126,13 +132,27 @@ internal static partial class UI
                 remWidth -= 100;
                 var titleWidth = ((int)(UMMWidth / (IsWide ? 3.0f : 4.0f))).Point();
                 var text = title(definition);
+                var titleKey = $"{callerKey}-{text}";
                 if (item != null)
                 {
                     text = text.Cyan().Bold();
                 }
 
-                Label(text, Width(titleWidth));
-                remWidth -= titleWidth;
+                if (childrenOnGUI == null)
+                {
+                    Label(text, Width(titleWidth));
+                    remWidth -= titleWidth;
+                }
+                else
+                {
+                    bool show = false;
+                    disclosureStates.TryGetValue(titleKey, out show);
+                    if (DisclosureToggle(text, ref show, titleWidth))
+                    {
+                        disclosureStates[titleKey] = show;
+                    }
+
+                }
                 Space(10);
                 remWidth -= 10;
                 if (item != null && value?.Invoke(item) is { } stringValue)
